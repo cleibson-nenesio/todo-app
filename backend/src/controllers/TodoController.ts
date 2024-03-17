@@ -83,6 +83,33 @@ class TodoController {
 
 		res.status(201).send({ result: 'To-do criado com sucesso!' });
 	}
+
+	async update(req: Request, res: Response) {
+		try {
+			const id = req.params.id;
+			const body = req.body;
+
+			console.log('[server]: update controller was called');
+
+			await Todo.findByIdAndUpdate(id, body);
+
+			res.status(200).send('Task update successfully');
+		} catch (err) {
+			console.log(err);
+
+			res.status(400).send({ error: 'an error ocurred' });
+		}
+	}
+
+	async delete(req: Request, res: Response) {
+		const id = req.params.id;
+
+		await TodoCategory.deleteMany({ _id: id });
+
+		await Todo.findByIdAndDelete(id);
+
+		res.status(200).send('Task deleted successfully');
+	}
 }
 
 export const todoController = new TodoController();

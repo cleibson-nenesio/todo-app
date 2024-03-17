@@ -7,15 +7,23 @@ import { categoriesServices } from '../../../services/Categories';
 // Libraries
 import { useQueryClient } from '@tanstack/react-query';
 import { Category } from '../../../pages/Home';
+import {
+	DragDropContext,
+	Draggable,
+	DropResult,
+	Droppable,
+} from 'react-beautiful-dnd';
 
 type AsideCategoriesProps = {
 	currentCategory: string;
 	setCurrentCategory(name: string): void;
 	categories: Category[];
+	setCategories(categories: Category[]): void;
 };
 
 export default function AsideCategories({
 	categories,
+	setCategories,
 	currentCategory,
 	setCurrentCategory,
 }: AsideCategoriesProps) {
@@ -42,21 +50,74 @@ export default function AsideCategories({
 		}
 	}
 
+	async function handleChangeCategoryPosition(e: DropResult) {
+		if (!e.destination || !e.destination.index) return;
+
+		const copyCategories = [...categories];
+
+		const categoryMovedId = e.draggableId.split('-')[1];
+
+		const category = categories.find((c) => c._id == categoryMovedId);
+
+		if (!category) return;
+
+		copyCategories.splice(e.source.index, 1);
+
+		copyCategories.splice(e.destination?.index, 0, category);
+
+		setCategories(copyCategories);
+
+		await categoriesServices.update(categoryMovedId, {
+			order: e.destination?.index,
+		});
+
+		queryClient.invalidateQueries({
+			queryKey: ['categories'],
+			exact: true,
+			refetchType: 'all',
+		});
+	}
+
 	return (
 		<aside className="py-9 px-5 w-fit min-w-[200px]">
-			<ul className="flex flex-col gap-[16px]">
-				{categories.map(({ name, _id }) => (
-					<li
-						onClick={() => setCurrentCategory(name)}
-						className={`text-[30px] cursor-pointer transition-all duration-300 ${
-							currentCategory == name && 'font-bold'
-						}`}
-						key={_id}
-					>
-						{name}
-					</li>
-				))}
-			</ul>
+			<DragDropContext onDragEnd={handleChangeCategoryPosition}>
+				<Droppable droppableId="categories">
+					{(provided) => (
+						<ul
+							className="characters"
+							{...provided.droppableProps}
+							ref={provided.innerRef}
+						>
+							{categories.map(({ name, _id }, i) => (
+								<Draggable
+									draggableId={`category-${_id}`}
+									index={i}
+									key={i}
+								>
+									{(provided) => (
+										<li
+											onClick={() =>
+												setCurrentCategory(name)
+											}
+											className={`text-[30px] cursor-pointer transition-all duration-300 ${
+												currentCategory == name &&
+												'font-bold'
+											}`}
+											ref={provided.innerRef}
+											{...provided.draggableProps}
+											{...provided.dragHandleProps}
+										>
+											{name}
+										</li>
+									)}
+								</Draggable>
+							))}
+
+							{provided.placeholder}
+						</ul>
+					)}
+				</Droppable>
+			</DragDropContext>
 
 			<div className="mt-[16px]">
 				{showInput && (

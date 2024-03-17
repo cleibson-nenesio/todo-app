@@ -49,20 +49,28 @@ export default function HomeScreen() {
 		}
 	}, [data, categoriesData]);
 
-	function toggleTask(taskId: string) {
-		const copyTodos = [...todos];
+	async function toggleTask(taskId: string) {
+		try {
+			const copyTodos = [...todos];
 
-		const todoToToggle = copyTodos.find((todo) => todo._id == taskId);
+			const todoToToggle = copyTodos.find((todo) => todo._id == taskId);
 
-		if (!todoToToggle) return;
+			if (!todoToToggle) return;
 
-		if (todoToToggle.status == 'pending') {
-			todoToToggle.status = 'done';
-		} else {
-			todoToToggle.status = 'pending';
+			if (todoToToggle.status == 'pending') {
+				todoToToggle.status = 'done';
+			} else {
+				todoToToggle.status = 'pending';
+			}
+
+			await todoServices.update(taskId, {
+				status: todoToToggle.status,
+			});
+
+			setTodos(copyTodos);
+		} catch (err) {
+			console.error(err);
 		}
-
-		setTodos(copyTodos);
 	}
 
 	function toggleCategory(categoryId: string) {
@@ -97,12 +105,27 @@ export default function HomeScreen() {
 		}
 	}
 
+	async function deleteTask(taskId: string) {
+		try {
+			await todoServices.delete(taskId);
+
+			queryClient.invalidateQueries({
+				queryKey: ['todos', currentCategory],
+				refetchType: 'all',
+				exact: true,
+			});
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
 	return (
 		<main className="flex h-[100svh] gap-14">
 			<AsideCategories
 				currentCategory={currentCategory}
 				setCurrentCategory={setCurrentCategory}
 				categories={categories}
+				setCategories={setCategories}
 			/>
 
 			<hr className="h-full w-[1px] bg-slate-300" />
@@ -150,19 +173,35 @@ export default function HomeScreen() {
 
 				<ul>
 					{todos.map((task, i) => (
-						<li className="flex gap-[4px]" key={i}>
-							<input
-								type="checkbox"
-								checked={task.status == 'done'}
-								onChange={() => toggleTask(task._id)}
-								id={`task=${task._id}`}
-							/>
+						<li
+							className="flex justify-between items-center gap-[16px] group"
+							key={i}
+						>
+							<div className="flex gap-[4px]">
+								<input
+									type="checkbox"
+									checked={task.status == 'done'}
+									onChange={() => toggleTask(task._id)}
+									name={`task-${task._id}`}
+									id={`task-${task._id}`}
+								/>
+								<label
+									htmlFor={`task-${task._id}`}
+									className={
+										task.status == 'done'
+											? 'line-through'
+											: ''
+									}
+								>
+									{task.title}
+								</label>
+							</div>
+
 							<p
-								className={
-									task.status == 'done' ? 'line-through' : ''
-								}
+								onClick={() => deleteTask(task._id)}
+								className="text-xl text-red-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-300"
 							>
-								{task.title}
+								X
 							</p>
 						</li>
 					))}

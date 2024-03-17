@@ -7,4 +7,6 @@ router.get('/', categoriesControllers.get);
 
 router.post('/', categoriesControllers.create);
 
+router.put('/:id', categoriesControllers.update);
+
 export default router;

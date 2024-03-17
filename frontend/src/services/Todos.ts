@@ -1,18 +1,11 @@
-import { AxiosResponse } from 'axios';
 import { API } from './api';
-
-interface ITodo {
-	getAll(query?: string): Promise<AxiosResponse<any, any>>;
-	create(body: CreateTask): Promise<AxiosResponse<any, any>>;
-}
-
 interface CreateTask {
 	title: string;
 	status: string;
 	categories: string[];
 }
 
-class TodoServices implements ITodo {
+class TodoServices {
 	private endpoint = '/todo';
 
 	async getAll(query?: string) {
@@ -21,6 +14,14 @@ class TodoServices implements ITodo {
 
 	async create(body: CreateTask) {
 		return await API.post(this.endpoint, body);
+	}
+
+	async update(id: string, body: Partial<CreateTask>) {
+		return await API.put(`${this.endpoint}/${id}`, body);
+	}
+
+	async delete(id: string) {
+		return await API.delete(`${this.endpoint}/${id}`);
 	}
 }
 

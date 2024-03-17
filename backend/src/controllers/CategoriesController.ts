@@ -3,6 +3,11 @@ import { Category } from '../models/Category';
 
 type OrderBy = 'asc' | 'desc';
 
+type Category = {
+	name: string;
+	order: number;
+};
+
 class CategoriesControllers {
 	async get(req: Request, res: Response) {
 		try {
@@ -45,6 +50,39 @@ class CategoriesControllers {
 
 			res.status(201).send('Category created sucessfully');
 		} catch (err) {
+			res.status(400).send(err);
+		}
+	}
+
+	async update(req: Request, res: Response) {
+		try {
+			const id = req.params.id;
+			const body = req.body as Category;
+
+			const allCategories = await Category.find({});
+
+			if (body.order > allCategories.length)
+				throw {
+					error: "Order can't be greater than categories length",
+				};
+
+			const category = await Category.findByIdAndUpdate(id, body);
+
+			if (body.order) {
+				for (let j = 1; j < allCategories.length; j++) {
+					if (j < body.order || category?._id == allCategories[j]._id)
+						continue;
+
+					Category.findByIdAndUpdate(allCategories[j]._id, {
+						order: j + 1,
+					});
+				}
+			}
+
+			res.status(200).send('Task updated successfully');
+		} catch (err) {
+			console.log(err);
+
 			res.status(400).send(err);
 		}
 	}
